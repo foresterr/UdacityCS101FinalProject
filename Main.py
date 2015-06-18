@@ -283,7 +283,6 @@ def path_to_friend(network, user_A, user_B, path=None):
     for friend in network[user_A][0]:
         subpath = path_to_friend(network, friend, user_B, path)
         if subpath is not None:
-            path=[]
             return [user_A] + subpath
     path.pop()
     return None
