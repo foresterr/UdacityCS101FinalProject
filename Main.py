@@ -53,7 +53,7 @@ __author__ = 'Q'
 # -----------------------------------------------------------------------------
 
 # Example string input. Use it to test your code.
-example_input="John is connected to Bryant, Debra, Walter.\
+example_input = "John is connected to Bryant, Debra, Walter.\
 John likes to play The Movie: The Game, The Legend of Corgi, Dinosaur Diner.\
 Bryant is connected to Olive, Ollie, Freda, Mercedes.\
 Bryant likes to play City Comptroller: The Fiscal Dilemma, Super Mushroom Man.\
@@ -98,6 +98,18 @@ Freda likes to play Starfleet Commander, Ninja Hamsters, Seahorse Adventures."
 # Return:
 #   The newly created network data structure
 def create_data_structure(string_input):
+    network = {}
+    records = string_input.split('.')
+    for record in records:
+        user = record.split(' ')[0]
+        if len(user) > 0 and user not in network:
+            network[user] = [set(), set()]
+        if ' is connected to ' in record:
+            connections = record.split(' is connected to ')[1].split(', ')
+            network[user][0] = network[user][0].union(set(connections))
+        elif ' likes to play ' in record:
+            games = record.split(' likes to play ')[1].split(', ')
+            network[user][1] = network[user][1].union(set(games))
     return network
 
 # ----------------------------------------------------------------------------- #
@@ -120,7 +132,9 @@ def create_data_structure(string_input):
 #   - If the user has no connections, return an empty list.
 #   - If the user is not in network, return None.
 def get_connections(network, user):
-    return []
+    if user in network:
+        return list(network[user][0])
+    return None
 
 # -----------------------------------------------------------------------------
 # get_games_liked(network, user):
@@ -134,8 +148,10 @@ def get_connections(network, user):
 #   A list of all games the user likes.
 #   - If the user likes no games, return an empty list.
 #   - If the user is not in network, return None.
-def get_games_liked(network,user):
-    return []
+def get_games_liked(network, user):
+    if user in network:
+        return list(network[user][1])
+    return None
 
 # -----------------------------------------------------------------------------
 # add_connection(network, user_A, user_B):
@@ -152,7 +168,10 @@ def get_games_liked(network,user):
 #   - If a connection already exists from user_A to user_B, return network unchanged.
 #   - If user_A or user_B is not in network, return False.
 def add_connection(network, user_A, user_B):
-    return network
+    if user_A in network and user_B in network:
+        network[user_A][0].add(user_B)
+        return network
+    return False
 
 # -----------------------------------------------------------------------------
 # add_new_user(network, user, games):
@@ -172,6 +191,8 @@ def add_connection(network, user_A, user_B):
 #   - If the user already exists in network, return network *UNCHANGED* (do not change
 #     the user's game preferences)
 def add_new_user(network, user, games):
+    if user not in network:
+        network[user] = [set(), set(games)]
     return network
 
 # -----------------------------------------------------------------------------
@@ -193,7 +214,12 @@ def add_new_user(network, user, games):
 #   himself/herself. It is also OK if the list contains a user's primary
 #   connection that is a secondary connection as well.
 def get_secondary_connections(network, user):
-    return []
+    if user not in network:
+        return None
+    secondary = set()
+    for friend in network[user][0]:
+        secondary = secondary.union(network[friend][0])
+    return list(secondary)
 
 # -----------------------------------------------------------------------------
 # connections_in_common(network, user_A, user_B):
@@ -208,7 +234,9 @@ def get_secondary_connections(network, user):
 #   The number of connections in common (as an integer).
 #   - If user_A or user_B is not in network, return False.
 def connections_in_common(network, user_A, user_B):
-    return 0
+    if user_A not in network or user_B not in network:
+        return False
+    return len(network[user_A][0].intersection(network[user_B][0]))
 
 # -----------------------------------------------------------------------------
 # path_to_friend(network, user_A, user_B):
@@ -242,8 +270,22 @@ def connections_in_common(network, user_A, user_B):
 #   in this procedure to keep track of nodes already visited in your search. You
 #   may safely add default parameters since all calls used in the grading script
 #   will only include the arguments network, user_A, and user_B.
-def path_to_friend(network, user_A, user_B):
-    # your RECURSIVE solution here!
+def path_to_friend(network, user_A, user_B, path=None):
+    if path is None:
+        path = []
+    if user_A not in network or user_B not in network:
+        return None
+    if user_A in path:
+        return None
+    if user_A == user_B:
+        return [user_A]
+    path.append(user_A)
+    for friend in network[user_A][0]:
+        subpath = path_to_friend(network, friend, user_B, path)
+        if subpath is not None:
+            path=[]
+            return [user_A] + subpath
+    path.pop()
     return None
 
 # Make-Your-Own-Procedure (MYOP)
@@ -253,18 +295,29 @@ def path_to_friend(network, user_A, user_B):
 # your network (like path_to_friend). Don't forget to comment your MYOP. You
 # may give this procedure any name you want.
 
-# Replace this with your own procedure! You can also uncomment the lines below
-# to see how your code behaves. Have fun!
+def remove_user(network, user):
+    # this procedure removes user and also removes them from connections of all other users
+    # so as to avoid dangling friends :P
+    if user not in network:
+        return network
+    network.pop(user)
+    for user_b in network:
+        network[user_b][0].discard(user)
+    return network
 
-#net = create_data_structure(example_input)
-#print net
-#print get_connections(net, "Debra")
-#print get_connections(net, "Mercedes")
-#print get_games_liked(net, "John")
-#print add_connection(net, "John", "Freda")
-#print add_new_user(net, "Debra", [])
-#print add_new_user(net, "Nick", ["Seven Schemers", "The Movie: The Game"]) # True
-#print get_secondary_connections(net, "Mercedes")
-#print connections_in_common(net, "Mercedes", "John")
-#print path_to_friend(net, "John", "Ollie")
-
+net = create_data_structure(example_input)
+print net
+print get_connections(net, "Debra")
+print get_connections(net, "Mercedes")
+print get_games_liked(net, "John")
+print add_connection(net, "John", "Freda")
+print add_new_user(net, "Debra", [])
+print add_new_user(net, "Nick", ["Seven Schemers", "The Movie: The Game"])  # True
+print add_connection(net, "Debra", "Nick")
+print add_connection(net, "Nick", "Debra")
+print get_secondary_connections(net, "Mercedes")
+print connections_in_common(net, "Mercedes", "John")
+print remove_user(net, "Nick")
+print path_to_friend(net, "John", "Ollie")
+print path_to_friend(net, "John", "Debra")
+print path_to_friend(net, "Mercedes", "Ollie")
